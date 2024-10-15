@@ -1,7 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import pandas as pd
 import itertools
+import datetime
+# postgresql backend
+import psycopg2
 
 import random
 import string
@@ -148,10 +152,48 @@ class gb_game_rep:
 
         # Create the scatter plot
         if self.verbose:
-            plt.figure(figsize=(5, 5))
-            plt.scatter(df['XPOS'], df['YPOS'], c=colors)  # Use the colors list
-            plt.gca().set_aspect('equal', adjustable='box')
-            plt.title(f'Ghostbusters Game')
+            # Create figure and axis
+            fig, ax = plt.subplots(figsize=(5, 5))  # Create figure and axis
+
+            # Plot the scatter plot
+            scatter = ax.scatter(df['XPOS'], df['YPOS'], c=colors, s=200, edgecolors=colors, alpha=0.5)
+
+            # Set equal aspect ratio
+            ax.set_aspect('equal', adjustable='box')
+
+            # Remove the axes and labels
+            ax.set_xticks([])  # Remove x-axis ticks
+            ax.set_yticks([])  # Remove y-axis ticks
+
+            # Hide the spines (the borders around the plot)
+            ax.spines['top'].set_visible(False)     # Hide top spine
+            ax.spines['right'].set_visible(False)   # Hide right spine
+            ax.spines['left'].set_visible(False)    # Hide left spine
+            ax.spines['bottom'].set_visible(False)  # Hide bottom spine
+
+            # Set the title for the axis
+            ax.set_title('Ghostbusters Game')
+
+            # Create a legend based on the colors
+            # Assume df['COLORS'] holds categories like 'Campers', 'Aliens', etc., and is mapped to `colors`
+            unique_colors = df['COLOR'].unique()  # Get unique categories in df['COLORS']
+            legend_handles = []
+
+            legend_dict = {'blue':'Camper','green':'Alien','orange':'GhostBuster'}
+
+            # Create a custom handle for each unique category
+            for color in unique_colors:
+                # Create a handle with the same color and label
+                handle = mlines.Line2D([], [], color=color, 
+                                       marker='o', 
+                                       linestyle='None', 
+                                       markersize=10, 
+                                       alpha = 0.5, 
+                                       label=legend_dict[color])
+                legend_handles.append(handle)
+
+            ax.legend(handles=legend_handles, title='Legend',loc = 'upper right', bbox_to_anchor=(1.3, 1))
+
             
         
         for p in np.arange(self.game_state.num_pairs):
@@ -161,8 +203,16 @@ class gb_game_rep:
             self.line_list.append((np.array([p1['XPOS'],p1['YPOS']]),np.array([p2['XPOS'],p2['YPOS']])))
             if self.verbose:
                 plt.plot([p1['XPOS'], p2['XPOS']], [p1['YPOS'], p2['YPOS']], color='red', linestyle='--')
+                
+
         
         if self.verbose:
+            new_line = mlines.Line2D([], [], color='red', linestyle='--', linewidth=2, label='Photon Laser')
+
+            legend_handles.append(new_line)
+
+            # Update the legend with the new handle
+            ax.legend(handles=legend_handles, title='Legend', loc='upper right', bbox_to_anchor=(1.35, 1))
             plt.show()
         
         
@@ -176,13 +226,48 @@ class gb_game_rep:
         for pair in itertools.combinations(self.line_list, 2):
             int_tests.append(check_intersection(pair[0], pair[1]))
         if any(element is np.True_ for element in int_tests):
-            self.game_result = "FAIL"
+            self.game_result = 0
             if self.verbose:
                 print('AT LEAST 2 PROTON BEAMS COLLIDED')
         else:
-            self.game_result = "SUCCESS"
+            self.game_result = 1
             if self.verbose:
                 print("THE WORLD IS SAVED")
+
+        self.game_dict = {"game_create_time":datetime.datetime.now(),
+             "game_num_campers":self.game_state.num_campers,
+             "game_num_pairs":self.game_state.num_pairs,
+             "game_result":self.game_result}
+        
+    def write_game_result(self):
+        try:
+            connection = psycopg2.connect(user="postgres",
+                                        password="postgres",
+                                        host="127.0.0.1",
+                                        port="5432",
+                                        database="postgres")
+
+            cursor = connection.cursor()
+            # Executing a SQL query to insert datetime into table
+            insert_query = """ INSERT INTO riddler.ghostbusters ("game_create_time",
+                    "game_num_campers",
+                    "game_num_pairs",
+                    "game_result") VALUES (%s, %s, %s, %s)"""
+            sql_record = (self.game_dict["game_create_time"],
+                self.game_dict["game_num_campers"],
+                self.game_dict["game_num_pairs"],
+                self.game_dict["game_result"])
+            cursor.execute(insert_query, sql_record)
+            connection.commit()
+            print("1 item inserted successfully")
+
+        except (Exception, psycopg2.Error) as error:
+            print("Error while connecting to PostgreSQL", error)
+        finally:
+            if connection:
+                cursor.close()
+                connection.close()
+
 
 
 class game_simulator:
