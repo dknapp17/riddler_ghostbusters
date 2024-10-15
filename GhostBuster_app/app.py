@@ -36,6 +36,7 @@ def simulate_game():
         # Create and evaluate the game representation
         game_rep.create_game_rep()
         game_rep.evaluate_game()
+        game_rep.write_game_result()
 
         # Generate plot if game is verbose
         plot_url = generate_plot(game_rep)
