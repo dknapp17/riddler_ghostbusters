@@ -21,11 +21,11 @@
         <button type="submit">Start Simulation</button>
     </form>
     
-    <div id="result">
+    <div id="result" style="max-width: 100%; height: auto;">
         <!-- Game result will be displayed here -->
     </div>
     
-    <div id="plot">
+    <div id="plot" style="max-width: 100%; height: auto; text-align: center;">
         <!-- Game plot will be displayed here -->
     </div>
 
@@ -43,7 +43,8 @@
                             $('#result').html(`<p>Error: ${response.error}</p>`);
                         } else {
                             $('#result').html(`<p>Game Result: ${response.result}</p>`);
-                            $('#plot').html(`<img src="${response.plot_url}" alt="Game Plot">`);
+                            $('#plot').html(`<img src="${response.plot_url}" alt="Game Plot" style="max-width: 100%; height: auto;">`);
+
                         }
                     }
                 });

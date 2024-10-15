@@ -56,11 +56,11 @@ def generate_plot(game_rep):
     # Create the plot
     plt.figure(figsize=(5, 5))
     game_rep.create_game_rep()  # Will create the plot
-    plt.gca().set_aspect('equal', adjustable='box')
+    # plt.gca().set_aspect('equal', adjustable='box')
 
     # Save the plot to a BytesIO object
     img = BytesIO()
-    plt.savefig(img, format='png')
+    plt.savefig(img, format='png', bbox_inches='tight')  # Use bbox_inches to avoid clipping
     img.seek(0)
 
     # Encode image to base64 and return it
