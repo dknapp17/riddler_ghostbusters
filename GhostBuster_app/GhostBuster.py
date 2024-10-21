@@ -5,7 +5,6 @@ import pandas as pd
 import itertools
 import datetime
 # postgresql backend
-import psycopg2
 from sqlalchemy import create_engine
 
 import streamlit as st
