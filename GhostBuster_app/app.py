@@ -1,73 +1,113 @@
-from flask import Flask, render_template, request, jsonify
-import numpy as np
-import random
-import string
+import streamlit as st
 import matplotlib.pyplot as plt
 from io import BytesIO
-import base64
 
-from GhostBuster import gb_game_state, gb_game_rep, GhostBuster
+from GhostBuster import gb_game_state, gb_game_rep, GhostBuster  # Ensure your GhostBuster logic is imported correctly
+from GhostBuster import GBDashData  # Import your GBDashData class
+from GhostBuster import GBDashViz  # Import your GBDashViz class
 
-# Import your GhostBuster classes and logic here
-# from your_module import gb_game_state, gb_game_rep
+# Streamlit app
+st.title("GhostBuster Game Simulator")
 
-app = Flask(__name__)
+# Sidebar inputs for game parameters
+num_campers = st.sidebar.number_input('Number of Campers', min_value=1, value=10, step=1)
+num_pairs = st.sidebar.number_input('Number of Pairs', min_value=1, value=5, step=1)
 
-# Home route to display the form
-@app.route('/')
-def index():
-    return render_template('index.html')
+# db_config
+db_config = {
+    'user': "postgres",
+    'password': "postgres",
+    'host': "127.0.0.1",
+    'port': "5432",
+    'database': "postgres",
+    'dbname': "postgres"
+}
 
-# Route to handle the game simulation
-@app.route('/simulate', methods=['POST'])
-def simulate_game():
-    num_campers = int(request.form['num_campers'])
-    num_pairs = int(request.form['num_pairs'])
+# Initialize GBDashData instance for database connection and querying
+dashboard_data = GBDashData(db_config)
 
-    # Initialize gb_game_state and gb_game_rep
+# Function to generate game plot
+def generate_plot(game_rep, title="Game Representation"):
+    """Helper function to generate the game plot and return the image for Streamlit display."""
+    plt.figure(figsize=(5, 5))
+    game_rep.create_game_rep()
+
+    # Save the plot to a BytesIO object
+    img = BytesIO()
+    plt.savefig(img, format='png', bbox_inches='tight')
+    img.seek(0)
+    plt.close()
+    
+    return img
+
+# Simulate the game when the button is clicked
+if st.sidebar.button("Simulate Game"):
     try:
+        # Initialize gb_game_state and gb_game_rep
         game_state = gb_game_state(num_campers, num_pairs, "random")
         game_state.create_ghostbusters()
         game_state.set_ghostbuster_positions_rand()
 
         # Initialize gb_game_rep
-        game_rep = gb_game_rep(game_state, verbose=True)  # Set verbose to False to suppress plots
+        game_rep = gb_game_rep(game_state, verbose=True)
 
         # Create and evaluate the game representation
         game_rep.create_game_rep()
         game_rep.evaluate_game()
         game_rep.write_game_result()
 
-        # Generate plot if game is verbose
-        plot_url = generate_plot(game_rep)
+        # Display the result
+        st.write(f"Game Result: {game_rep.game_result}")
 
-        # Return the result and the image to the frontend
-        return jsonify({
-            'result': game_rep.game_result,
-            'plot_url': plot_url
-        })
+        # Generate and display the plot
+        st.image(generate_plot(game_rep), use_column_width=True)
 
     except ValueError as e:
-        return jsonify({'error': str(e)})
+        st.error(f"Error: {str(e)}")
 
+# Add button to refresh the data using GBDashData and GBDashViz
+if st.sidebar.button("Refresh Data"):
+    try:
+        # Refresh the data from the database
+        dashboard_data.refresh_data()
 
-def generate_plot(game_rep):
-    """Helper function to generate the game plot and return it as a base64-encoded image."""
-    # Create the plot
-    plt.figure(figsize=(5, 5))
-    game_rep.create_game_rep()  # Will create the plot
-    # plt.gca().set_aspect('equal', adjustable='box')
+        # Create a GBDashViz instance to visualize the refreshed data
+        dashboard_viz = GBDashViz(dashboard_data)
 
-    # Save the plot to a BytesIO object
-    img = BytesIO()
-    plt.savefig(img, format='png', bbox_inches='tight')  # Use bbox_inches to avoid clipping
-    img.seek(0)
+        # First row with 2 columns
+        col1, col2 = st.columns(2)
 
-    # Encode image to base64 and return it
-    plot_url = base64.b64encode(img.getvalue()).decode()
-    plt.close()  # Close the plot to free memory
-    return f"data:image/png;base64,{plot_url}"
+        # First column: Actual vs Target
+        with col1:
+            st.subheader("Actual vs Target")
+            dashboard_viz.plot_actual_pct()
+
+        # Second column: Success Rate by Number of Campers
+        with col2:
+            st.subheader("Success Rate by Number of Campers")
+            # Increase the size of the plot to make it larger
+            plt.figure(figsize=(8, 6))  # Adjust this figure size as needed
+            dashboard_viz.plot_success_rate_by_campers()
+
+        # Second row with 2 columns
+        col3, col4 = st.columns(2)
+
+        # Third column: Success Rate by Number of Pairs
+        with col3:
+            st.subheader("Success Rate by Number of Pairs")
+            # Increase the size of the plot to make it larger
+            plt.figure(figsize=(8, 6))  # Adjust this figure size as needed
+            dashboard_viz.plot_success_rate_by_pairs()
+
+        # Fourth column: Simulations Run
+        with col4:
+            st.subheader("Simulations Run")
+            dashboard_viz.plot_sims_run()
+
+    except Exception as e:
+        st.error(f"Error refreshing data: {str(e)}")
+
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    pass

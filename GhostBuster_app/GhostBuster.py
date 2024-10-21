@@ -6,6 +6,9 @@ import itertools
 import datetime
 # postgresql backend
 import psycopg2
+from sqlalchemy import create_engine
+
+import streamlit as st
 
 import random
 import string
@@ -318,3 +321,159 @@ class game_simulator:
         print(f"Failed Trials: {fail_count}")
         print(f"Errors: {error_count}")
         print(f"Failure Percentage: {failure_percentage:.2f}%")
+
+
+class GBDashData:
+    def __init__(self, db_config):
+        """
+        Initialize the class with a database connection configuration.
+        :param db_config: Dictionary containing database connection parameters.
+        """
+        self.db_config = db_config
+        self.engine = self.connect_db()
+        self.actual_pct_df = None
+        self.success_by_pairs_df = None
+        self.success_by_num_campers_df = None
+        self.sims_run_df = None
+
+    def connect_db(self):
+        """
+        Establishes a connection to the PostgreSQL database using SQLAlchemy.
+        :return: SQLAlchemy engine object.
+        """
+        try:
+            # Create a PostgreSQL connection string and connect using SQLAlchemy
+            db_url = f"postgresql+psycopg2://{self.db_config['user']}:{self.db_config['password']}@{self.db_config['host']}:{self.db_config['port']}/{self.db_config['dbname']}"
+            engine = create_engine(db_url)
+            return engine
+        except Exception as e:
+            print(f"Error connecting to database: {e}")
+            return None
+
+    def execute_query(self, query):
+        """
+        Executes the given SQL query and returns the result as a pandas DataFrame.
+        :param query: SQL query string.
+        :return: DataFrame containing the result of the query.
+        """
+        if not self.engine:
+            print("No database connection available.")
+            return pd.DataFrame()
+
+        try:
+            # Use pandas' read_sql to run the query using the SQLAlchemy engine
+            df = pd.read_sql(query, self.engine)
+            return df
+        except Exception as e:
+            print(f"Error executing query: {e}")
+            return pd.DataFrame()
+
+    def actual_pct_query(self):
+        """
+        Execute the first query and return the result as a pandas DataFrame.
+        :return: DataFrame containing the result of the query.
+        """
+        query = """SELECT  game_num_campers,
+                    round(100*sum(CASE WHEN game_result = 0 then 0
+                    ELSE 1
+                    END)/count(*)::numeric,2) AS SUCCESS_RATE_PCT,
+                    count(*) AS COUNT
+                    FROM riddler.ghostbusters
+                    WHERE game_num_campers = 20
+                    AND game_num_pairs = 2
+                    GROUP BY game_num_campers
+                    ORDER BY  game_num_campers;"""
+        return self.execute_query(query)
+
+    def success_by_pairs_query(self):
+        """
+        Execute the second query and return the result as a pandas DataFrame.
+        :return: DataFrame containing the result of the query.
+        """
+        query = """SELECT  game_num_pairs,
+                round(100*sum(CASE WHEN game_result = 0 then 0
+                ELSE 1
+                END)/count(*)::numeric,2) AS SUCCESS_RATE_PCT,
+                count(*) AS COUNT
+                FROM riddler.ghostbusters
+                GROUP BY game_num_pairs
+                ORDER BY  game_num_pairs;"""
+        return self.execute_query(query)
+
+    def success_by_num_campers_query(self):
+        """
+        Execute the third query and return the result as a pandas DataFrame.
+        :return: DataFrame containing the result of the query.
+        """
+        query = """SELECT  game_num_campers,
+                    round(100*sum(CASE WHEN game_result = 0 then 0
+                    ELSE 1
+                    END)/count(*)::numeric,2) AS SUCCESS_RATE_PCT,
+                    count(*) AS COUNT
+                    FROM riddler.ghostbusters
+                    GROUP BY game_num_campers
+                    ORDER BY  game_num_campers;"""
+        return self.execute_query(query)
+
+    def sims_run_query(self):
+        """
+        Count how many simulations have been run.
+        """
+        query = "SELECT COUNT(DISTINCT game_id) AS SIMS_RUN from riddler.ghostbusters;"
+        return self.execute_query(query)
+
+    def refresh_data(self):
+        """
+        Refresh all data by running the queries again and updating DataFrame attributes.
+        """
+        self.actual_pct_df = self.actual_pct_query()
+        self.success_by_pairs_df = self.success_by_pairs_query()
+        self.success_by_num_campers_df = self.success_by_num_campers_query()
+        self.sims_run_df = self.sims_run_query()
+
+    def close_connection(self):
+        """
+        Close the SQLAlchemy engine connection.
+        """
+        if self.engine:
+            self.engine.dispose()
+            print("Database connection closed.")
+
+
+class GBDashViz:
+    def __init__(self, dashboard_data):
+        self.data = dashboard_data
+
+    def plot_actual_pct(self):
+        df = self.data.actual_pct_df
+        actual_success = df['success_rate_pct'].values[0]  # Get the total simulations count
+
+        # Use st.metric to display the number in a more prominent way
+        st.metric(label="Actual Success Rate", value=f"{actual_success:,}", delta=None)
+        st.metric(label="Target Success Rate", value=66.66, delta=None)
+
+    def plot_success_rate_by_campers(self):
+        df = self.data.success_by_num_campers_df
+        fig, ax = plt.subplots()
+        ax.scatter(df['game_num_campers'], df['success_rate_pct'])
+        ax.set_title("Success Rate by Number of Campers")
+        ax.set_xlabel("Number of Campers")
+        ax.set_ylabel("Success Rate (%)")
+        st.pyplot(fig)  # Display the figure in Streamlit
+
+    def plot_success_rate_by_pairs(self):
+        df = self.data.success_by_pairs_df
+        fig, ax = plt.subplots()
+        ax.scatter(df['game_num_pairs'], df['success_rate_pct'])
+        ax.set_title("Success Rate by Number of Pairs")
+        ax.set_xlabel("Number of Pairs")
+        ax.set_ylabel("Success Rate (%)")
+        st.pyplot(fig)  # Display the figure in Streamlit
+
+    def plot_sims_run(self):
+        df = self.data.sims_run_df
+        total_sims = df['sims_run'].values[0]  # Get the total simulations count
+
+        # Use st.metric to display the number in a more prominent way
+        st.metric(label="Total Simulations Run", value=f"{total_sims:,}", delta=None)
+
