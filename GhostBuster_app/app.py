@@ -13,18 +13,8 @@ st.title("GhostBuster Game Simulator")
 num_campers = st.sidebar.number_input('Number of Campers', min_value=1, value=10, step=1)
 num_pairs = st.sidebar.number_input('Number of Pairs', min_value=1, value=5, step=1)
 
-# db_config
-db_config = {
-    'user': "postgres",
-    'password': "postgres",
-    'host': "127.0.0.1",
-    'port': "5432",
-    'database': "postgres",
-    'dbname': "postgres"
-}
-
 # Initialize GBDashData instance for database connection and querying
-dashboard_data = GBDashData(db_config)
+dashboard_data = GBDashData()
 
 # Function to generate game plot
 def generate_plot(game_rep, title="Game Representation"):

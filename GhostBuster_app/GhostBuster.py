@@ -324,13 +324,12 @@ class game_simulator:
 
 
 class GBDashData:
-    def __init__(self, db_config):
+    def __init__(self):
         """
         Initialize the class with a database connection configuration.
         :param db_config: Dictionary containing database connection parameters.
         """
-        self.db_config = db_config
-        self.engine = self.connect_db()
+        self.conn = self.connect_db()
         self.actual_pct_df = None
         self.success_by_pairs_df = None
         self.success_by_num_campers_df = None
@@ -343,9 +342,8 @@ class GBDashData:
         """
         try:
             # Create a PostgreSQL connection string and connect using SQLAlchemy
-            db_url = f"postgresql+psycopg2://{self.db_config['user']}:{self.db_config['password']}@{self.db_config['host']}:{self.db_config['port']}/{self.db_config['dbname']}"
-            engine = create_engine(db_url)
-            return engine
+            conn = st.connection("postgresql", type="sql")
+            return conn
         except Exception as e:
             print(f"Error connecting to database: {e}")
             return None
@@ -356,13 +354,13 @@ class GBDashData:
         :param query: SQL query string.
         :return: DataFrame containing the result of the query.
         """
-        if not self.engine:
+        if not self.conn:
             print("No database connection available.")
             return pd.DataFrame()
 
         try:
-            # Use pandas' read_sql to run the query using the SQLAlchemy engine
-            df = pd.read_sql(query, self.engine)
+            # Use pandas' read_sql to run the query using the connection
+            df = pd.read_sql(query, self.conn)
             return df
         except Exception as e:
             print(f"Error executing query: {e}")
