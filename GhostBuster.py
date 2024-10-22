@@ -128,7 +128,7 @@ class gb_game_rep:
         # initialize game result as success
         self.game_result = 'SUCCESS'
 
-    def create_game_rep(self, aliens=[19, 5,6]):
+    def create_game_rep(self, streamlit = False):
         # Create a DataFrame to hold positions
         df = pd.DataFrame(np.arange(0, self.game_state.num_campers), columns=['POSITION'])
         df['ANGLES'] = np.linspace(0, 2 * np.pi, df.shape[0], endpoint=False)
@@ -219,6 +219,9 @@ class gb_game_rep:
             # Update the legend with the new handle
             ax.legend(handles=legend_handles, title='Legend', loc='upper right', bbox_to_anchor=(1.35, 1))
             plt.show()
+        
+        if streamlit:
+            st.pyplot(fig)
         
         
     
@@ -512,7 +515,7 @@ def main():
             game_rep = gb_game_rep(game_state, verbose=True)
 
             # Create and evaluate the game representation
-            game_rep.create_game_rep()
+            game_rep.create_game_rep(streamlit = True)
             game_rep.evaluate_game()
             game_rep.write_game_result()
 
@@ -520,7 +523,7 @@ def main():
             st.write(f"Game Result: {game_rep.game_result}")
 
             # Generate and display the plot
-            st.image(generate_plot(game_rep), use_column_width=True)
+            # st.image(generate_plot(game_rep), use_column_width=True)
 
         except ValueError as e:
             st.error(f"Error: {str(e)}")
