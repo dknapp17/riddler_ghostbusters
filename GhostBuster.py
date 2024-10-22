@@ -346,13 +346,13 @@ class GBDashData:
         Establishes a connection to the PostgreSQL database using SQLAlchemy.
         :return: SQLAlchemy engine object.
         """
-        try:
+        # try:
             # Create a PostgreSQL connection string and connect using SQLAlchemy
-            conn = st.connection("postgresql", type="sql")
-            return conn
-        except Exception as e:
-            print(f"Error connecting to database: {e}")
-            return None
+        conn = st.connection("postgresql", type="sql")
+        return conn
+        # except Exception as e:
+        #     print(f"Error connecting to database: {e}")
+        #     return None
 
     def execute_query(self, query):
         """
