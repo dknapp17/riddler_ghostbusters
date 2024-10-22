@@ -267,9 +267,10 @@ class gb_game_rep:
         except (Exception, psycopg2.Error) as error:
             print("Error while connecting to PostgreSQL", error)
         finally:
-            if connection:
-                cursor.close()
-                connection.close()
+            pass
+            # if connection:
+            #     cursor.close()
+            #     connection.close()
 
 
 
@@ -433,9 +434,10 @@ class GBDashData:
         """
         Close the SQLAlchemy engine connection.
         """
-        if self.engine:
-            self.engine.dispose()
-            print("Database connection closed.")
+        # if self.engine:
+        #     self.engine.dispose()
+        #     print("Database connection closed.")
+        pass
 
 
 class GBDashViz:
