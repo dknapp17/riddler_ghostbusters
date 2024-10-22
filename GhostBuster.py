@@ -249,11 +249,11 @@ class gb_game_rep:
         
     def write_game_result(self):
         try:
-            connection = psycopg2.connect(user=st.secrets["username"],
-                                        password=st.secrets["password"],
-                                        host=st.secrets["host"],
-                                        port=st.secrets["port"],
-                                        database=st.secrets["database"])
+            connection = psycopg2.connect(user=st.secrets.connections.postgresql.username,
+                                        password=st.secrets.connections.postgresql.password,
+                                        host=st.secrets.connections.postgresql.host,
+                                        port=st.secrets.connections.postgresql.port,
+                                        database=st.secrets.connections.postgresql.database)
 
             cursor = connection.cursor()
             # Executing a SQL query to insert datetime into table
