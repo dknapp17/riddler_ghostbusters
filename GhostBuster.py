@@ -570,7 +570,7 @@ def main():
                 dashboard_viz.plot_sims_run()
 
         except Exception as e:
-            st.error(f"Error refreshing data: {str(e)}")
+            st.error(f"Error refreshing data : {str(e)}")
 
 
 if __name__ == '__main__':
