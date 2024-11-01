@@ -335,7 +335,7 @@ class GBDashData:
         Initialize the class with a database connection configuration.
         :param db_config: Dictionary containing database connection parameters.
         """
-        self.conn = self.connect_db()
+        # self.conn = self.connect_db()
         self.actual_pct_df = None
         self.success_by_pairs_df = None
         self.success_by_num_campers_df = None
@@ -348,8 +348,8 @@ class GBDashData:
         """
         # try:
             # Create a PostgreSQL connection string and connect using SQLAlchemy
-        conn = st.connection("postgresql", type="sql")
-        return conn
+        self.conn = st.connection("postgresql", type="sql")
+        return self.conn
         # except Exception as e:
         #     print(f"Error connecting to database: {e}")
         #     return None
@@ -533,6 +533,8 @@ def main():
     # Add button to refresh the data using GBDashData and GBDashViz
     if st.sidebar.button("Refresh Data"):
         try:
+            # connect to db
+            dashboard_data.connect_db()
             # Refresh the data from the database
             dashboard_data.refresh_data()
 

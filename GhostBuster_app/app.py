@@ -2,9 +2,9 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from io import BytesIO
 
-from GhostBuster import gb_game_state, gb_game_rep, GhostBuster  # Ensure your GhostBuster logic is imported correctly
-from GhostBuster import GBDashData  # Import your GBDashData class
-from GhostBuster import GBDashViz  # Import your GBDashViz class
+from GhostBusters import gb_game_state, gb_game_rep, GhostBuster  # Ensure your GhostBuster logic is imported correctly
+from GhostBusters import GBDashData  # Import your GBDashData class
+from GhostBusters import GBDashViz  # Import your GBDashViz class
 
 # Streamlit app
 st.title("GhostBuster Game Simulator")
